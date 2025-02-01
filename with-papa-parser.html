@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV File Processing with PapaParse</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f1dddd;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            table-layout: fixed;
+            /* Ensures consistent column widths */
+        }
+
+        th,
+        td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+            word-wrap: break-word;
+            /* Ensures long text wraps */
+            white-space: normal;
+            /* Allows text to wrap */
+            max-width: 200px;
+            /* Limits column width */
+            overflow: hidden;
+            /* Hides overflowed content */
+            text-overflow: ellipsis;
+            /* Adds "..." for overflowed text */
+        }
+
+        th {
+            background-color: #f4f4f4;
+            font-weight: bold;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            /* Enables horizontal scrolling */
+            max-width: 100%;
+            /* Limits the table container width */
+        }
+
+        .pagination {
+            margin-top: 20px;
+        }
+
+        .pagination button {
+            margin: 0 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        a {
+
+            max-width: 200px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: none;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+</head>
+
+<body>
+    <h2>Upload CSV File(with papa parse)</h2>
+    <input type="file" id="fileInput" accept=".csv">
+    <div class="table-container">
+        <table id="csvTable"></table>
+    </div>
+    <div class="pagination">
+        <button id="prevPage">Previous</button>
+        <span id="pageInfo"></span>
+        <button id="nextPage">Next</button>
+    </div>
+    <br>
+    <br>
+    <a id="downloadLink">Download CSV</a>
+
+    <script>
+        let csvData = { headers: [], data: [] };
+        let currentPage = 0;
+        const rowsPerPage = 50; // Number of rows to display per page
+
+        document.getElementById('fileInput').addEventListener('change', handleFileChange);
+
+        function handleFileChange(event) {
+            const file = event.target.files?.[0];
+            if (!file) {
+                alert("Please select a CSV file.");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const csvText = event.target.result;
+
+                // Use PapaParse to parse the CSV file
+                Papa.parse(csvText, {
+                    header: true, // Automatically extract headers
+                    skipEmptyLines: true, // Skip empty lines
+                    complete: function (results) {
+                        csvData.headers = Object.keys(results.data[0] || {});
+                        csvData.data = results.data.map(row =>
+                            csvData.headers.map(header => row[header] || '')
+                        );
+
+                        renderTable(currentPage);
+                        document.getElementById('downloadLink').style.display = 'block';
+                    },
+                    error: function (error) {
+                        console.error("Error parsing CSV:", error);
+                        alert("An error occurred while parsing the CSV file.");
+                    }
+                });
+            };
+            reader.readAsText(file);
+        }
+
+        function renderTable(page) {
+            const tableElement = document.getElementById('csvTable');
+            if (!tableElement) return;
+
+            // Clear the table
+            tableElement.innerHTML = '';
+
+            // Append the header row
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            csvData.headers.forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            tableElement.appendChild(thead);
+
+            // Append data rows for the current page
+            const tbody = document.createElement('tbody');
+            const start = page * rowsPerPage;
+            const end = start + rowsPerPage;
+            const pageData = csvData.data.slice(start, end);
+            pageData.forEach(row => {
+                const tr = document.createElement('tr');
+                row.forEach(cell => {
+                    const td = document.createElement('td');
+                    td.textContent = cell || '';
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+            tableElement.appendChild(tbody);
+
+            // Update pagination info
+            document.getElementById('pageInfo').textContent = `Page ${page + 1} of ${Math.ceil(csvData.data.length / rowsPerPage)}`;
+        }
+
+        document.getElementById('prevPage').addEventListener('click', () => {
+            if (currentPage > 0) {
+                currentPage--;
+                renderTable(currentPage);
+            }
+        });
+
+        document.getElementById('nextPage').addEventListener('click', () => {
+            if ((currentPage + 1) * rowsPerPage < csvData.data.length) {
+                currentPage++;
+                renderTable(currentPage);
+            }
+        });
+
+        document.getElementById('downloadLink').addEventListener('click', () => {
+            const csvContent = Papa.unparse({
+                fields: csvData.headers,
+                data: csvData.data.map(row => csvData.headers.map(header => row[csvData.headers.indexOf(header)]))
+            });
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const link = document.getElementById('downloadLink');
+            link.href = URL.createObjectURL(blob);
+            link.download = "corrected-data.csv";
+        });
+    </script>
+</body>
+
+</html>
