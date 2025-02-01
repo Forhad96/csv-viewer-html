@@ -119,9 +119,15 @@
                     header: true, // Automatically extract headers
                     skipEmptyLines: true, // Skip empty lines
                     complete: function (results) {
+                        // Extract headers
                         csvData.headers = Object.keys(results.data[0] || {});
+
+                        // Process data rows and replace '�' with '-'
                         csvData.data = results.data.map(row =>
-                            csvData.headers.map(header => row[header] || '')
+                            csvData.headers.map(header => {
+                                const value = row[header] || '';
+                                return value.replace(/�/g, '-'); // Replace '�' with '-'
+                            })
                         );
 
                         renderTable(currentPage);
