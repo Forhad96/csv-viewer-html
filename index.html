@@ -8,8 +8,23 @@
 </head>
 
 <body>
-    <input type="ifile" id="file">
-    <table id="table"></table>
+<div class="table-container">
+        <h1>Upload CSV File(pure html,css,js)</h1>
+       
+        <input type="file" id="file">
+        <table id="table"></table>
+        <div class="pagination">
+            <button id="prevPage">Previous</button>
+            <span id="pageInfo"></span>
+            <button id="nextPage">Next</button>
+        </div>
+        <br>
+        <br>
+        <button><a href="withPapaParse.html">csv viewer with papa parse</a></button>
+        
+    </div>
+
+ <!-- external js file -->
     <script src="app.js"></script>
 </body>
 </html>
